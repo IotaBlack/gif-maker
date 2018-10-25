@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>animator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+    <script src="main.js" defer></script>
+    <script src="gif.js"></script>
+    <script src="gif.worker.js"></script>
+</head>
+
+<body>
+    <canvas id="cvs"></canvas>
+    <br>
+    Wavelenght:<input id="wavelength" type="number" min="1" max="100" value="10" /><br>
+    Intensity:<input id="intensity" type="number" min="0" max="100" value="10" /><br>
+    Speed:<input id="speed" type="number" min="0" max="10" value="1" step="0.1" /><br>
+    <button onclick="preview = true;animatePreview(performance.now())">Preview</button>
+    <button id="gifbtn">Make GIF</button>
+    <h3 id="progress">Progress:N/A</h3>
+</body>
+
+</html>
