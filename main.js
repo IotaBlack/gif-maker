@@ -1,3 +1,9 @@
+/**@typedef Options
+ * @property {Number} wavelength
+ * @property {Number} intensity
+ * 
+ */
+
 
 /**
  * @type {HTMLCanvasElement}
@@ -32,7 +38,14 @@ window.addEventListener("drop", function (e) {
 }, true);
 
 
-gifbutton.addEventListener('click', e => { createGif(parseFloat(wavelength.value), parseFloat(intensity.value), parseFloat(speed.value), delay) })
+gifbutton.addEventListener('click',
+    e => {
+        createGif({
+            wavelength: parseFloat(wavelength.value),
+            intensity: parseFloat(intensity.value)
+        },
+            parseFloat(speed.value), delay)
+    })
 
 
 function loadfile(src) {
@@ -61,22 +74,29 @@ function load(src) {
         cvs.height = displaycvs.height = image.height
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(image, 0, 0, image.width, image.height);
-        setBackground(background >> 16 & 0xff, background >> 8 & 0xff, background >> 0 & 0xff)
-        draw(13, 13, 0)
+        setBackground(
+            background >> 16 & 0xff,
+            background >> 8 & 0xff,
+            background >> 0 & 0xff)
+        draw({ wavelength: 13, intensity: 13 }, 0)
     };
     image.src = src;
 }
 
-function draw(wavelength, intensity, offset) {
+/**@param {Options} options */
+function draw(options, offset = 0) {
 
-    var img = wave(ctx.getImageData(0, 0, cvs.width, cvs.height), wavelength, intensity, offset)
+    var img = wave(ctx.getImageData(0, 0, cvs.width, cvs.height), options, offset)
 
     displaycvs.width = img.width
     displaycvs.height = img.height
     displayctx.putImageData(img, 0, 0)
 }
 
-function wave(imgd, wavelength, intensity, offset) {
+/**@param {Options} options */
+function wave(imgd, options, offset = 0) {
+    var wavelength = options.wavelength
+    var intensity = options.intensity
     var img = ctx.createImageData(imgd.width + intensity * 2, imgd.height)
 
 
@@ -93,7 +113,8 @@ function wave(imgd, wavelength, intensity, offset) {
     for (let i = 0; i < imgd.width; i++) {
         for (let j = 0; j < imgd.height; j++) {
             var index1 = (j * imgd.width + i) * 4
-            var index2 = (j * img.width + i + Math.floor(Math.sin((j / wavelength + offset) / Math.PI * 2) * intensity + intensity)) * 4
+            var index2 = (j * img.width + i +
+                Math.floor(Math.sin((j / wavelength + offset) / Math.PI * 2) * intensity + intensity)) * 4
 
             img.data[index2 + 0] = imgd.data[index1 + 0]
             img.data[index2 + 1] = imgd.data[index1 + 1]
@@ -108,16 +129,22 @@ function wave(imgd, wavelength, intensity, offset) {
 }
 
 function animatePreview(timer) {
-    draw(parseFloat(wavelength.value), parseFloat(intensity.value), timer / delay * parseFloat(speed.value))
+    draw({
+        wavelength: parseFloat(wavelength.value),
+        intensity: parseFloat(intensity.value)
+    },
+        timer / delay * parseFloat(speed.value))
+
+
     if (preview) {
         requestAnimationFrame(animatePreview)
     }
 }
 
 
-function createGif(wavelength, intensity, speed, delay) {
+function createGif(options, speed, delay) {
     var step = speed
-    var img = wave(ctx.getImageData(0, 0, cvs.width, cvs.height), wavelength, intensity, 0)
+    var img = wave(ctx.getImageData(0, 0, cvs.width, cvs.height), options, 0)
     displaycvs.width = img.width
     displaycvs.height = img.height
 
@@ -132,8 +159,8 @@ function createGif(wavelength, intensity, speed, delay) {
     });
     gif.on('progress', p => {
         console.log('progress: ' + p)
-        progressElement.innerHTML = `Progress: ${(p*100).toFixed(1)}%`
-        if(gifframes[currentframe]){
+        progressElement.innerHTML = `Progress: ${(p * 100).toFixed(1)}%`
+        if (gifframes[currentframe]) {
             displayctx.putImageData(gifframes[currentframe++], 0, 0)
         }
     })
@@ -150,7 +177,7 @@ function createGif(wavelength, intensity, speed, delay) {
     preview = false
     currentframe = 0
     for (let i = 0; i < 10; i += step) {
-        img = wave(ctx.getImageData(0, 0, cvs.width, cvs.height), wavelength, intensity, i)
+        img = wave(ctx.getImageData(0, 0, cvs.width, cvs.height), options, i)
         //displayctx.putImageData(img, 0, 0)
         gifframes.push(img)
         gif.addFrame(img, { delay: delay, copy: true })

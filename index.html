@@ -20,6 +20,7 @@
     Speed:<input id="speed" type="number" min="0" max="10" value="1" step="0.1" /><br>
     <button onclick="preview = true;animatePreview(performance.now())">Preview</button>
     <button id="gifbtn">Make GIF</button>
+    <input type="color" value="#00ff00" onchange="background=parseInt(this.value.substr(1),16)">
     <h3 id="progress">Progress:N/A</h3><br>
     <input type="file" onchange="loadfile(this.files[0]);">
 
