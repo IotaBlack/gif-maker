@@ -27,6 +27,12 @@ var delay = 42
 var gifframes = []
 var currentframe = 0
 var preview = true
+/**@type {ImageData} */
+var previewImage = ctx.createImageData(100, 100)
+
+
+load(document.getElementById('preview'))
+
 
 animatePreview()
 window.addEventListener("dragover", function (e) { e.preventDefault(); }, true);
@@ -59,37 +65,50 @@ function loadfile(src) {
         //	Create our FileReader and run the results through the render function.
         var reader = new FileReader();
         reader.onload = function (e) {
-            load(e.target.result);
+            var image = new Image();
+            image.src = e.target.result;
+            image.onload = () => { load(image) }
+
+            //load(e.target.result);
         };
         reader.readAsDataURL(src);
     }
 }
 
 function load(src) {
-    var image = new Image();
-    image.onload = function () {
-        var canvas = ctx.canvas
+    cvs.width = src.width
+    cvs.height = src.height
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    ctx.drawImage(src, 0, 0, src.width, src.height);
 
-        cvs.width = displaycvs.width = image.width
-        cvs.height = displaycvs.height = image.height
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(image, 0, 0, image.width, image.height);
-        setBackground(
-            background >> 16 & 0xff,
-            background >> 8 & 0xff,
-            background >> 0 & 0xff)
-        draw({ wavelength: 13, intensity: 13 }, 0)
-    };
-    image.src = src;
+
+    var scale = Math.sqrt(50000 / (src.width * src.height))
+    var previewWidth = Math.floor(src.width * scale)
+    var previewHeight = Math.floor(src.height * scale)
+
+    console.log(previewHeight, previewWidth, previewHeight * previewWidth)
+
+
+    displaycvs.width = previewWidth
+    displaycvs.height = previewHeight
+    displayctx.clearRect(0, 0, displaycvs.width, displaycvs.height);
+    displayctx.drawImage(src, 0, 0, previewHeight, previewWidth);
+
+    previewImage = displayctx.getImageData(0, 0, displaycvs.width, displaycvs.height)
+    setBackground(
+        background >> 16 & 0xff,
+        background >> 8 & 0xff,
+        background >> 0 & 0xff)
+    drawPreview({ wavelength: 0, intensity: 0 }, 0)
 }
 
 /**@param {Options} options */
-function draw(options, offset = 0) {
+function drawPreview(options, offset = 0) {
 
-    var img = wave(ctx.getImageData(0, 0, cvs.width, cvs.height), options, offset)
-
+    var img = wave(previewImage, options, offset)
     displaycvs.width = img.width
     displaycvs.height = img.height
+
     displayctx.putImageData(img, 0, 0)
 }
 
@@ -129,7 +148,7 @@ function wave(imgd, options, offset = 0) {
 }
 
 function animatePreview(timer) {
-    draw({
+    drawPreview({
         wavelength: parseFloat(wavelength.value),
         intensity: parseFloat(intensity.value)
     },
@@ -141,7 +160,7 @@ function animatePreview(timer) {
     }
 }
 
-
+/**@param {Options} options */
 function createGif(options, speed, delay) {
     var step = speed
     var img = wave(ctx.getImageData(0, 0, cvs.width, cvs.height), options, 0)

@@ -7,7 +7,6 @@
     <title>animator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
-    <script src="main.js" defer></script>
     <script src="gif.js"></script>
     <script src="gif.worker.js"></script>
 </head>
@@ -23,7 +22,8 @@
     <input type="color" value="#00ff00" onchange="background=parseInt(this.value.substr(1),16)">
     <h3 id="progress">Progress:N/A</h3><br>
     <input type="file" onchange="loadfile(this.files[0]);">
-
+    <img id="preview" src="preview.png" hidden>
+    <script src="main.js" defer></script>
 </body>
 
 </html>
