@@ -49,7 +49,7 @@ var preview = true
 var previewImage = ctx.createImageData(100, 100)
 var imageFilters = {
     /**@param {Options} options */
-    wave: function (imgd, options, aoffset = 0,scale = 1) {
+    wave: function (imgd, options, aoffset = 0, scale = 1) {
         var wavelength = options.wavelength
         var intensity = options.intensity
         var img = ctx.createImageData(imgd.width + intensity * 2, imgd.height)
@@ -75,7 +75,7 @@ var imageFilters = {
 
                 var index1 = (j * imgd.width + i) * 4
                 var index2 = (j * img.width + i +
-                    Math.floor(Math.sin((j/scale / wavelength + offset) / Math.PI * 2) * intensity + options.intensity)) * 4
+                    Math.floor(Math.sin((j / scale / wavelength + offset) / Math.PI * 2) * intensity + options.intensity)) * 4
 
                 img.data[index2 + 0] = imgd.data[index1 + 0]
                 img.data[index2 + 1] = imgd.data[index1 + 1]
@@ -100,8 +100,14 @@ function initialize() {
     /**opts.getintensity = function (x, y, offset) {
         return (Math.cos((offset / 5) / Math.PI) + 1) / 2 * this.intensity
     }**/
+    opts.getwavelength = o => wavelength.value
+    opts.getintensity = o => intensity.value
+
     filters.push(new filter(imageFilters.wave, opts))
 
+    intensity.addEventListener('change', e => {
+        filters[0].options.intensity = parseFloat(e.target.value)
+    })
 
     load(document.getElementById('preview'))
 
@@ -118,11 +124,7 @@ function initialize() {
 
     gifbutton.addEventListener('click',
         e => {
-            createGif({
-                wavelength: parseFloat(wavelength.value),
-                intensity: parseFloat(intensity.value)
-            },
-                parseFloat(speed.value), delay)
+            createGif(parseFloat(speed.value), delay)
         })
 
 }
@@ -132,7 +134,7 @@ function filter(method, options) {
 }
 
 filter.prototype.apply = function (img, offset, scale = 2) {
-    return this.method(img, this.options, offset,scale)
+    return this.method(img, this.options, offset, scale)
 }
 
 function loadfile(src) {
@@ -181,7 +183,7 @@ function load(src) {
         background >> 16 & 0xff,
         background >> 8 & 0xff,
         background >> 0 & 0xff)
-    drawPreview({ wavelength: 0, intensity: 0 }, 0)
+    drawPreview(0)
 }
 
 function applyFilters(img, offset, scale = 1) {
@@ -194,9 +196,9 @@ function applyFilters(img, offset, scale = 1) {
 }
 
 /**@param {Options} options */
-function drawPreview(options, offset = 0) {
+function drawPreview(offset = 0) {
 
-    var img = applyFilters(previewImage, offset,previewImage.scale)
+    var img = applyFilters(previewImage, offset, previewImage.scale)
     displaycvs.width = img.width
     displaycvs.height = img.height
 
@@ -206,12 +208,7 @@ function drawPreview(options, offset = 0) {
 
 
 function animatePreview(timer) {
-    drawPreview({
-        wavelength: parseFloat(wavelength.value),
-        intensity: parseFloat(intensity.value)
-    },
-        (timer / delay * parseFloat(speed.value)) % 100)
-
+    drawPreview((timer / delay * parseFloat(speed.value)) % 100)
 
     if (preview) {
         requestAnimationFrame(animatePreview)
@@ -219,7 +216,7 @@ function animatePreview(timer) {
 }
 
 /**@param {Options} options */
-function createGif(options, speed, delay) {
+function createGif(speed, delay) {
     var step = speed
     var img = applyFilters(ctx.getImageData(0, 0, cvs.width, cvs.height), 0)
     displaycvs.width = img.width
