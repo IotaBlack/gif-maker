@@ -5,7 +5,21 @@
  */
 
 function options(wavelength = 1, intensity = 0, offset = 0) {
-    return { wavelength, intensity, offset }
+    var obj = {
+        wavelength: wavelength,
+        intensity: intensity,
+        offset: offset,
+
+
+
+        getProp: function (prop, x, y, offset) {
+            if (this['get' + prop]) {
+                return this['get' + prop](x, y, offset)
+            }
+            return this[prop]
+        }
+    }
+    return obj
 }
 
 
@@ -35,12 +49,12 @@ var preview = true
 var previewImage = ctx.createImageData(100, 100)
 var imageFilters = {
     /**@param {Options} options */
-    wave: function (imgd, options, offset = 0) {
+    wave: function (imgd, options, aoffset = 0,scale = 1) {
         var wavelength = options.wavelength
         var intensity = options.intensity
         var img = ctx.createImageData(imgd.width + intensity * 2, imgd.height)
 
-        offset += options.offset
+        aoffset += options.offset
 
         for (let i = 0; i < img.width; i++) {
             for (let j = 0; j < img.height; j++) {
@@ -54,9 +68,14 @@ var imageFilters = {
 
         for (let i = 0; i < imgd.width; i++) {
             for (let j = 0; j < imgd.height; j++) {
+
+                wavelength = options.getProp('wavelength', i, j, aoffset)
+                intensity = options.getProp('intensity', i, j, aoffset)
+                offset = options.getProp('offset', i, j, aoffset)
+
                 var index1 = (j * imgd.width + i) * 4
                 var index2 = (j * img.width + i +
-                    Math.floor(Math.sin((j / wavelength + offset) / Math.PI * 2) * intensity + intensity)) * 4
+                    Math.floor(Math.sin((j/scale / wavelength + offset) / Math.PI * 2) * intensity + options.intensity)) * 4
 
                 img.data[index2 + 0] = imgd.data[index1 + 0]
                 img.data[index2 + 1] = imgd.data[index1 + 1]
@@ -74,7 +93,14 @@ var filters = []
 
 function initialize() {
 
-    filters.push(new filter(imageFilters.wave, options(10, 10, 0)))
+    var opts = options(10, 10, 0)
+    opts.getoffset = function (x, y, offset) {
+        return offset
+    }
+    /**opts.getintensity = function (x, y, offset) {
+        return (Math.cos((offset / 5) / Math.PI) + 1) / 2 * this.intensity
+    }**/
+    filters.push(new filter(imageFilters.wave, opts))
 
 
     load(document.getElementById('preview'))
@@ -105,8 +131,8 @@ function filter(method, options) {
     this.options = options
 }
 
-filter.prototype.apply = function (img, offset) {
-    return this.method(img, this.options, offset)
+filter.prototype.apply = function (img, offset, scale = 2) {
+    return this.method(img, this.options, offset,scale)
 }
 
 function loadfile(src) {
@@ -150,6 +176,7 @@ function load(src) {
     displayctx.drawImage(src, 0, 0, previewHeight, previewWidth);
 
     previewImage = displayctx.getImageData(0, 0, displaycvs.width, displaycvs.height)
+    previewImage.scale = scale
     setBackground(
         background >> 16 & 0xff,
         background >> 8 & 0xff,
@@ -157,10 +184,10 @@ function load(src) {
     drawPreview({ wavelength: 0, intensity: 0 }, 0)
 }
 
-function applyFilters(img, offset) {
+function applyFilters(img, offset, scale = 1) {
 
     for (let i = 0; i < filters.length; i++) {
-        img = filters[i].apply(img, offset)
+        img = filters[i].apply(img, offset, scale)
     }
 
     return img
@@ -169,7 +196,7 @@ function applyFilters(img, offset) {
 /**@param {Options} options */
 function drawPreview(options, offset = 0) {
 
-    var img = applyFilters(previewImage, offset)
+    var img = applyFilters(previewImage, offset,previewImage.scale)
     displaycvs.width = img.width
     displaycvs.height = img.height
 
@@ -183,7 +210,7 @@ function animatePreview(timer) {
         wavelength: parseFloat(wavelength.value),
         intensity: parseFloat(intensity.value)
     },
-        timer / delay * parseFloat(speed.value))
+        (timer / delay * parseFloat(speed.value)) % 100)
 
 
     if (preview) {
@@ -226,7 +253,7 @@ function createGif(options, speed, delay) {
     gifframes = []
     preview = false
     currentframe = 0
-    for (let i = 0; i < 10; i += step) {
+    for (let i = 0; i < 100; i += step) {
         img = applyFilters(ctx.getImageData(0, 0, cvs.width, cvs.height), i)
         //displayctx.putImageData(img, 0, 0)
         gifframes.push(img)
